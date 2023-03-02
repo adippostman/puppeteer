@@ -51,7 +51,7 @@ import UserAgent from "user-agents";
 
     const twitterPage = await browser.newPage();
     await twitterPage.setUserAgent(
-        new UserAgent({ deviceCategory: "desktop" }).toString
+        new UserAgent({ deviceCategory: "desktop" }).toString()
     );
     await twitterPage.goto("https://www.twitter.com", {
         waitUntil: "domcontentloaded",
