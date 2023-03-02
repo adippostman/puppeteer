@@ -46,7 +46,7 @@ import UserAgent from "user-agents";
         headless: true,
         defaultViewport: null,
         executablePath: executablePath(),
-        args: ["--start-maximized"],
+        args: ["--start-maximized", "--no-sandbox"],
     });
 
     const twitterPage = await browser.newPage();
