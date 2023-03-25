@@ -46,7 +46,11 @@ import UserAgent from "user-agents";
         headless: true,
         defaultViewport: null,
         executablePath: executablePath(),
-        args: ["--start-maximized", "--no-sandbox"],
+        args: [
+            // "--start-maximized",
+            // "--no-sandbox",
+            // "--disable-setuid-sandbox",
+        ],
     });
 
     const twitterPage = await browser.newPage();
@@ -93,66 +97,81 @@ import UserAgent from "user-agents";
     console.log("");
 
     for (const [index, target] of targets.entries()) {
-        console.log(
-            `[${index + 1}/${targets.length}] going to @${target} profile ..`
-        );
-        const targetURL = `https://twitter.com/intent/follow?screen_name=${target}`;
-        await twitterPage.goto(targetURL, { waitUntil: "networkidle2" });
-
-        await twitterPage
-            .waitForSelector('div[data-testid="confirmationSheetConfirm"]')
-            .then(async (e) => {
-                await delay(1000);
-                await e.click({ delay: 200 });
-                console.log(`youre now ${target} follower`);
-            });
-
-        await delay(3000);
-        if (await twitterPage.$(`div[aria-label="Follow @${target}"]`)) {
-            await twitterPage
-                .$(`div[aria-label="Follow @${target}"]`)
-                .then(async (e) => {
-                    await e.click({ delay: 500 });
+        while (true) {
+            try {
+                console.log(
+                    `[${index + 1}/${
+                        targets.length
+                    }] going to @${target} profile ..`
+                );
+                const targetURL = `https://twitter.com/intent/follow?screen_name=${target}`;
+                await twitterPage.goto(targetURL, {
+                    waitUntil: "networkidle2",
                 });
+
+                await twitterPage
+                    .waitForSelector(
+                        'div[data-testid="confirmationSheetConfirm"]'
+                    )
+                    .then(async (e) => {
+                        await delay(1000);
+                        await e.click({ delay: 200 });
+                        console.log(`youre now ${target} follower`);
+                    });
+
+                await delay(3000);
+                if (
+                    await twitterPage.$(`div[aria-label="Follow @${target}"]`)
+                ) {
+                    await twitterPage
+                        .$(`div[aria-label="Follow @${target}"]`)
+                        .then(async (e) => {
+                            await e.click({ delay: 500 });
+                        });
+                }
+
+                if (
+                    await twitterPage.$(
+                        `div[data-testid="sheetDialog"] > div > div > div > div > div > div[role="button"]`
+                    )
+                ) {
+                    await twitterPage
+                        .$(
+                            `div[data-testid="sheetDialog"] > div > div > div > div > div > div[role="button"]`
+                        )
+                        .then(async (e) => {
+                            await e.click({ delay: 500 });
+                            console.log(`popup has clicked`);
+                        });
+                }
+
+                await twitterPage
+                    .waitForSelector(
+                        'div[role="group"] > div > div[data-testid="retweet"]'
+                    )
+                    .then(async (e) => {
+                        await delay(1000);
+                        await e.click({ delay: 500 });
+                    });
+
+                // click confirm retweet
+                await twitterPage
+                    .waitForSelector(
+                        'div[data-testid="Dropdown"] > div[data-testid="retweetConfirm"]',
+                        { timeout: 5000 }
+                    )
+                    .then(async (e) => {
+                        await delay(1000);
+                        await e.click({ delay: 200 });
+                        console.log(`success retweet from @${target}`);
+                    });
+
+                console.log(``);
+                break;
+            } catch (error) {
+                console.log(error);
+            }
         }
-
-        if (
-            await twitterPage.$(
-                `div[data-testid="sheetDialog"] > div > div > div > div > div > div[role="button"]`
-            )
-        ) {
-            await twitterPage
-                .$(
-                    `div[data-testid="sheetDialog"] > div > div > div > div > div > div[role="button"]`
-                )
-                .then(async (e) => {
-                    await e.click({ delay: 500 });
-                    console.log(`popup has clicked`);
-                });
-        }
-
-        await twitterPage
-            .waitForSelector(
-                'div[role="group"] > div > div[data-testid="retweet"]'
-            )
-            .then(async (e) => {
-                await delay(1000);
-                await e.click({ delay: 500 });
-            });
-
-        // click confirm retweet
-        await twitterPage
-            .waitForSelector(
-                'div[data-testid="Dropdown"] > div[data-testid="retweetConfirm"]',
-                { timeout: 5000 }
-            )
-            .then(async (e) => {
-                await delay(1000);
-                await e.click({ delay: 200 });
-                console.log(`success retweet from @${target}`);
-            });
-
-        console.log(``);
     }
 
     for (const cookie of await twitterPage.cookies()) {
